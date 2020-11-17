@@ -1,5 +1,6 @@
 import telegram
 from messages import Messenger, Messages
+from search import Query, Search
 
 
 class CommandFactory:
@@ -35,9 +36,11 @@ class Callbacks:
         )
 
     @staticmethod
-    def search(update, context):
-        Messenger.send_message(
-            bot=context.bot,
-            chat_id=update.effective_chat.id,
-            msg=Messages.Errors.SEARCH_UNAVAILABLE,
-        )
+    def search(update: telegram.Update, context: telegram.ext.CallbackContext):
+
+        query = Query(update, context)
+        result = Search.execute(query)
+        for item in result:
+            Messenger.send_search_result(
+                bot=context.bot, chat_id=update.effective_chat.id, result=item
+            )

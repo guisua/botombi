@@ -3,6 +3,7 @@ from telegram.ext import Updater, CommandHandler
 from environment import Environment
 from logger import Logger
 from commands import CommandFactory, Command
+from ombi import Ombi
 
 
 def launch(env: Environment):
@@ -14,6 +15,11 @@ def launch(env: Environment):
 class Bot:
     def __init__(self, environment):
         self.updater = Updater(token=environment.telegram_bot_token())
+        Ombi.initialize(
+            host=environment.ombi_host(),
+            api_key=environment.ombi_api_key(),
+            ombi_user_name=environment.ombi_user_name(),
+        )
 
     def startup(self):
         if self.updater is None:
