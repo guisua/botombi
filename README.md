@@ -1,3 +1,3 @@
-# Plexy
+# boTombi
 
-Plexy is a Telegram bot for interacting with an Ombi instance.
+boTombi is a bot for Telegram for interacting with Ombi.
