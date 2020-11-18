@@ -1,6 +1,6 @@
 import telegram
 from messages import Messenger, Messages
-from search import Query, Search
+from search import MovieQuery, Search
 
 
 class CommandFactory:
@@ -38,9 +38,9 @@ class Callbacks:
     @staticmethod
     def search(update: telegram.Update, context: telegram.ext.CallbackContext):
 
-        query = Query(update, context)
-        result = Search.execute(query)
-        for item in result:
+        query = MovieQuery(update, context)
+        results = Search.execute(query)
+        for result in results[: min(len(results) - 1, 5)]:
             Messenger.send_search_result(
-                bot=context.bot, chat_id=update.effective_chat.id, result=item
+                bot=context.bot, chat_id=update.effective_chat.id, result=result
             )
