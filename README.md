@@ -1,7 +1,3 @@
-# boTombi
-
----
-
 [![Ombi version](https://img.shields.io/badge/ombi_version-4.0-orange)](https://github.com/tidusjar/Ombi)
 [![Languages](https://img.shields.io/github/languages/top/guisua/botombi)]()
 [![License](https://img.shields.io/github/license/guisua/botombi)]()
@@ -10,5 +6,5 @@
 [![Issues](https://img.shields.io/github/issues/guisua/botombi)](https://github.com/guisua/botombi/issues)
 [![PayPal donations](https://img.shields.io/badge/paypal-donate-blue)](https://paypal.me/guille)
 
-## boTombi
+# boTombi
 boTombi is a bot for Telegram for interacting with Ombi.
