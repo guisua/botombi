@@ -8,8 +8,8 @@ class Ombi:
 
     class Endpoint:
         class Search:
-            Movie = "/v1/Search/movie/{}"
-            Tv = "/v1/Search/tv/{}"
+            Movie = "/v2/search/Movie/{}"
+            Tv = "/v2/search/Tv/{}"
             Multi = "/v2/search/multi/{}"
 
         class Request:
@@ -69,12 +69,20 @@ class Ombi:
         return Ombi._ombi._search_movie(query_str=query_str)
 
     @staticmethod
+    def search_multi(query_str: str):
+        return Ombi._ombi._search_multi(query_str=query_str)
+
+    @staticmethod
     def search_movie(query_str: str):
         return Ombi._ombi._search_movie(query_str=query_str)
 
     @staticmethod
     def search_tv(query_str: str):
         return Ombi._ombi._search_tv(query_str=query_str)
+
+    @staticmethod
+    def fetch_movie(tmdb_id: int):
+        return Ombi._ombi._search_movie(query_str=str(tmdb_id))
 
     @staticmethod
     def request_movie(tmdb_id: int):

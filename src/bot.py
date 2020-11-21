@@ -10,6 +10,9 @@ from telegram.ext import (
 from environment import Environment
 from logger import Logger
 from ombi import Ombi
+from search import MultiQuery, Search, MovieSearchResult
+from strings import Strings
+from messages import Messenger
 
 
 def launch(env: Environment):
@@ -107,13 +110,17 @@ class Callbacks:
     @staticmethod
     def search(update: telegram.Update, context: telegram.ext.CallbackContext):
 
-        query = MovieQuery(update, context)
+        query = MultiQuery(update, context)
         Logger.info(f"Received search command with: '{query.text}'")
         results = Search.execute(query)
         for result in results:
-            Messenger.send_search_result(
-                bot=context.bot, chat_id=update.effective_chat.id, result=result
-            )
+            if result.mediaType == "movie":
+                movie_result = MovieSearchResult(Ombi.fetch_movie(result.id))
+                Messenger.send_search_result(
+                    bot=context.bot,
+                    chat_id=update.effective_chat.id,
+                    result=movie_result,
+                )
 
     @staticmethod
     def handle_callback_query(

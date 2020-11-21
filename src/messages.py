@@ -4,6 +4,7 @@ import json
 
 from logger import Logger
 from search import SearchResult
+from strings import Strings
 
 
 class MessageDecorator:

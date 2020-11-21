@@ -15,12 +15,34 @@ class Query:
         return True if self.text else False
 
 
+class MultiQuery(Query):
+    pass
+
+
 class MovieQuery(Query):
     pass
 
 
 class TvQuery(Query):
     pass
+
+
+class MultiSearchResult:
+    def __init__(self, obj: dict):
+        for key in obj:
+            setattr(self, key, obj[key])
+
+    def fetch(self):
+        if self.mediaType == "movie":
+            return Ombi.fetch_movie()
+
+    @staticmethod
+    def results_from_response(response):
+        if response is None:
+            return None
+        results = [MultiSearchResult(item) for item in response]
+        Logger.info(f"Deserialized {len(results)} multi results")
+        return results
 
 
 class SearchResult:
@@ -101,6 +123,11 @@ class Search:
         if isinstance(query, MovieQuery):
             response = Ombi.search_movie(query_str=query.text)
             results = MovieSearchResult.results_from_response(response)
+            return results[: Environment.max_search_results()]
+
+        if isinstance(query, MultiQuery):
+            response = Ombi.search_multi(query_str=query.text)
+            results = MultiSearchResult.results_from_response(response)
             return results[: Environment.max_search_results()]
 
         return None
