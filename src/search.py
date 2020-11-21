@@ -1,6 +1,7 @@
 import telegram
 
 from ombi import Ombi
+from environment import Environment
 
 
 class Query:
@@ -86,6 +87,7 @@ class Search:
 
         if isinstance(query, MovieQuery):
             response = Ombi.search_movie(query_str=query.text)
-            return MovieSearchResult.results_from_response(response)
+            results = MovieSearchResult.results_from_response(response)
+            return results[: Environment.max_search_results()]
 
         return None

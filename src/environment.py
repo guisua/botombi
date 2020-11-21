@@ -10,6 +10,7 @@ class EnvironmentVariables:
     OMBI_HOST = "OMBI_HOST"
     OMBI_API_KEY = "OMBI_API_KEY"
     OMBI_USER_NAME = "OMBI_USER_NAME"
+    MAX_SEARCH_RESULTS = "MAX_SEARCH_RESULTS"
 
 
 class Environment:
@@ -26,6 +27,7 @@ class Environment:
         self._ombi_host = os.getenv(EnvironmentVariables.OMBI_HOST)
         self._ombi_api_key = os.getenv(EnvironmentVariables.OMBI_API_KEY)
         self._ombi_user_name = os.getenv(EnvironmentVariables.OMBI_USER_NAME)
+        self._max_search_results = os.getenv(EnvironmentVariables.MAX_SEARCH_RESULTS)
         self._validate_environment()
 
     def _validate_environment(self):
@@ -67,3 +69,8 @@ class Environment:
     @staticmethod
     def ombi_user_name():
         return Environment.shared()._ombi_user_name
+
+    @staticmethod
+    def max_search_results():
+        env_max_search_results = Environment.shared()._max_search_results
+        return env_max_search_results if env_max_search_results else 100
