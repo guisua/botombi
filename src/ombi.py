@@ -1,4 +1,5 @@
 from networking import Communicator
+from logger import Logger
 
 
 class Ombi:
@@ -45,18 +46,22 @@ class Ombi:
         return Communicator.post(url=url, headers=self.headers, data=data)
 
     def _search_movie(self, query_str):
+        Logger.info(f"Send movie search to Ombi for query '{query_str}'")
         url = self._base_url() + Ombi.Endpoint.Search.Movie.format(query_str)
         return Communicator.get(url=url, headers=self.headers)
 
     def _search_tv(self, query_str):
+        Logger.info(f"Send TV search to Ombi for query '{query_str}'")
         url = self._base_url() + Ombi.Endpoint.Search.Tv.format(query_str)
         return Communicator.get(url=url, headers=self.headers)
 
     def _request_movie(self, tmdb_id):
+        Logger.info(f"Send Movie search to Ombi for tmdb_id '{tmdb_id}'")
+        url = self._base_url() + Ombi.Endpoint.Request.Movie
         return Communicator.post(
-            url=Ombi.Endpoint.Request.Movie,
-            headers=headers,
-            data={"theMobieDbId": tmdb_id},
+            url=url,
+            headers=self.headers,
+            data={"theMovieDbId": tmdb_id},
         )
 
     @staticmethod
@@ -73,4 +78,15 @@ class Ombi:
 
     @staticmethod
     def request_movie(tmdb_id: int):
+        Logger.info(f"Requesting movie with id {tmdb_id}")
         return Ombi._ombi._request_movie(tmdb_id=tmdb_id)
+
+    @staticmethod
+    def process_callback_data(callback_data):
+        if callback_data.action == "request":
+            if callback_data.type == "movie":
+                Ombi.request_movie(tmdb_id=callback_data.id)
+                return
+            Logger.info(f"Unsupported callback type '{callback_data.type}'")
+            return
+        Logger.info(f"Unsupported callback action '{callback_data.action}'")

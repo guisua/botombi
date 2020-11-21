@@ -1,6 +1,7 @@
 import telegram
 
 from ombi import Ombi
+from logger import Logger
 from environment import Environment
 
 
@@ -35,6 +36,9 @@ class SearchResult:
     def __lt__(self, other):
         return self.weight < other.weight
 
+    def callback_data(self):
+        pass
+
     @staticmethod
     def results_from_response(response):
         pass
@@ -42,6 +46,7 @@ class SearchResult:
 
 class MovieSearchResult(SearchResult):
     def __init__(self, obj: dict):
+        Logger.info(f"Contructing MovieSearchResult from object: {obj}")
         super().__init__(obj)
         self.poster_url = None
         if obj.get("posterPath"):
@@ -54,11 +59,16 @@ class MovieSearchResult(SearchResult):
     def requestable(self):
         return not self.available and not self.requested
 
+    def callback_data(self):
+        return {"action": "request", "type": "movie", "id": self.tmdb_id}
+
     @staticmethod
     def results_from_response(response):
         if response is None:
             return None
-        return [MovieSearchResult(item) for item in response]
+        results = [MovieSearchResult(item) for item in response]
+        Logger.info(f"Deserialized {len(results)} movie results")
+        return results
 
 
 class TvSearchResult(SearchResult):
@@ -71,6 +81,9 @@ class TvSearchResult(SearchResult):
         self.tvdb_id = obj.get("theTvDbId")
         self.date = obj.get("firstAired")
         self.year = int(self.date.split("-")[0]) if self.date else None
+
+    def callback_data(self):
+        return {"action": "request", "type": "tv", "id": self.tmdb_id}
 
     @staticmethod
     def results_from_response(response):

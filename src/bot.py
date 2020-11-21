@@ -1,8 +1,14 @@
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    Filters,
+    MessageHandler,
+    CallbackQueryHandler,
+)
 
 from environment import Environment
 from logger import Logger
-from commands import CommandFactory, Command
+from commands import CommandFactory, Command, Callbacks
 from ombi import Ombi
 
 
@@ -19,6 +25,10 @@ class Bot:
             host=environment.ombi_host(),
             api_key=environment.ombi_api_key(),
             ombi_user_name=environment.ombi_user_name(),
+        )
+
+        self.updater.dispatcher.add_handler(
+            CallbackQueryHandler(Callbacks.handle_callback_query, pass_user_data=True)
         )
 
     def startup(self):
@@ -42,3 +52,7 @@ class Bot:
 
         for command in commands:
             self.register_command(command)
+
+        self.updater.dispatcher.add_handler(
+            MessageHandler(Filters.command, Callbacks.unknown)
+        )
