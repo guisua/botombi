@@ -13,7 +13,7 @@ from telegram.ext import (
 from environment import Environment
 from logger import Logger
 from ombi import Ombi
-from search import MultiQuery, Search, MovieSearchResult
+from search import MultiQuery, Search, MovieSearchResult, TvSearchResult
 from strings import Strings
 from messages import Messenger
 
@@ -105,13 +105,16 @@ class Bot:
         results = Search.execute(query)
         for result in results:
             if result.mediaType == "movie":
-                movie_result = MovieSearchResult(Ombi.fetch_movie(result.id))
-                msg = Messenger.send_search_result(
-                    bot=context.bot,
-                    chat_id=update.effective_chat.id,
-                    result=movie_result,
-                )
-                threading.Timer(self.search_result_delete_delay, msg.delete).start()
+                detailed_result = MovieSearchResult(Ombi.fetch_movie(result.id))
+            elif result.mediaType == "tv":
+                detailed_result = TvSearchResult(Ombi.fetch_tv(result.id))
+            detailed_result.poster_url = Ombi.Images.Poster.format(result.poster)
+            msg = Messenger.send_search_result(
+                bot=context.bot,
+                chat_id=update.effective_chat.id,
+                result=detailed_result,
+            )
+            threading.Timer(self.search_result_delete_delay, msg.delete).start()
 
     def handle_callback_query(
         self, update: telegram.Update, context: telegram.ext.CallbackContext

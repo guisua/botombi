@@ -9,11 +9,12 @@ class Ombi:
     class Endpoint:
         class Search:
             Movie = "/v2/search/Movie/{}"
-            Tv = "/v2/search/Tv/{}"
+            Tv = "/v2/search/Tv/moviedb/{}"
             Multi = "/v2/search/multi/{}"
 
         class Request:
             Movie = "/v1/Request/movie"
+            Tv = "/v1/Request/TV"
 
     _ombi = None
 
@@ -64,6 +65,15 @@ class Ombi:
             data={"theMovieDbId": tmdb_id},
         )
 
+    def _request_tv(self, thetvdb_id):
+        Logger.info(f"Send TV Show request to Ombi for thetvdb_id '{thetvdb_id}'")
+        url = self._base_url() + Ombi.Endpoint.Request.Tv
+        return Communicator.post(
+            url=url,
+            headers=self.headers,
+            data={"requestAll": True, "tvDbId": thetvdb_id},
+        )
+
     @staticmethod
     def search(query_str: str):
         return Ombi._ombi._search_movie(query_str=query_str)
@@ -85,6 +95,10 @@ class Ombi:
         return Ombi._ombi._search_movie(query_str=str(tmdb_id))
 
     @staticmethod
+    def fetch_tv(thetvdb_id: int):
+        return Ombi._ombi._search_tv(query_str=str(thetvdb_id))
+
+    @staticmethod
     def request_movie(tmdb_id: int):
         if tmdb_id is None:
             Logger.error(f"Tried to request movie with id: {tmdb_id}")
@@ -98,10 +112,25 @@ class Ombi:
         return None
 
     @staticmethod
+    def request_tv(thetvdb_id: int):
+        if thetvdb_id is None:
+            Logger.error(f"Tried to request TV show with id: {thetvdb_id}")
+            return False
+        Logger.info(f"Requesting TV show with id: {thetvdb_id}")
+        response = Ombi._ombi._request_tv(thetvdb_id=thetvdb_id)
+        if response is not None:
+            if response.get("isError") == False:
+                return response.get("result")
+            Logger.error(response.get("errorMessage"))
+        return None
+
+    @staticmethod
     def process_callback_data(callback_data):
         if callback_data.action == "request":
             if callback_data.type == "movie":
                 return Ombi.request_movie(tmdb_id=callback_data.id)
+            if callback_data.type == "tv":
+                return Ombi.request_tv(thetvdb_id=callback_data.id)
             Logger.info(f"Unsupported callback type '{callback_data.type}'")
             return None
         Logger.info(f"Unsupported callback action '{callback_data.action}'")
