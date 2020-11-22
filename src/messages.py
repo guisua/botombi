@@ -18,11 +18,11 @@ class MessageDecorator:
         return result.title
 
     @staticmethod
-    def photo_caption(result: SearchResult, status=True):
+    def result_caption(result: SearchResult, status=True):
         title = MessageDecorator.result_title(result, year=True)
         result_status = MessageDecorator.result_status(result)
         if status and result_status:
-            return Strings.Search.SEARCH_RESULT_MOVIE_PHOTO_CAPTION.format(
+            return Strings.Search.SEARCH_RESULT_MOVIE_CAPTION.format(
                 title, result_status
             )
 
@@ -83,20 +83,18 @@ class Messenger:
 
     @staticmethod
     def send_search_result(bot: telegram.Bot, chat_id, result):
-        request_action = Strings.Requests.REQUEST_ACTION
-
         if result.poster_url:
-            bot.send_photo(
+            return bot.send_photo(
                 chat_id=chat_id,
-                caption=MessageDecorator.photo_caption(
+                caption=MessageDecorator.result_caption(
                     result, status=not result.requestable()
                 ),
                 photo=result.poster_url,
                 reply_markup=MarkupFactory.reply_markup_from_result(result),
             )
         else:
-            bot.send_message(
+            return bot.send_message(
                 chat_id=chat_id,
-                text=MessageDecorator.result_title(result),
+                text=MessageDecorator.result_caption(result),
                 reply_markup=MarkupFactory.reply_markup_from_result(result),
             )

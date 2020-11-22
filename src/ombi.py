@@ -56,7 +56,7 @@ class Ombi:
         return Communicator.get(url=url, headers=self.headers)
 
     def _request_movie(self, tmdb_id):
-        Logger.info(f"Send Movie search to Ombi for tmdb_id '{tmdb_id}'")
+        Logger.info(f"Send Movie request to Ombi for tmdb_id '{tmdb_id}'")
         url = self._base_url() + Ombi.Endpoint.Request.Movie
         return Communicator.post(
             url=url,
@@ -86,15 +86,23 @@ class Ombi:
 
     @staticmethod
     def request_movie(tmdb_id: int):
-        Logger.info(f"Requesting movie with id {tmdb_id}")
-        return Ombi._ombi._request_movie(tmdb_id=tmdb_id)
+        if tmdb_id is None:
+            Logger.error(f"Tried to request movie with id: {tmdb_id}")
+            return False
+        Logger.info(f"Requesting movie with id: {tmdb_id}")
+        response = Ombi._ombi._request_movie(tmdb_id=tmdb_id)
+        if response is not None:
+            if response.get("isError") == False:
+                return response.get("result")
+            Logger.error(response.get("errorMessage"))
+        return None
 
     @staticmethod
     def process_callback_data(callback_data):
         if callback_data.action == "request":
             if callback_data.type == "movie":
-                Ombi.request_movie(tmdb_id=callback_data.id)
-                return
+                return Ombi.request_movie(tmdb_id=callback_data.id)
             Logger.info(f"Unsupported callback type '{callback_data.type}'")
-            return
+            return None
         Logger.info(f"Unsupported callback action '{callback_data.action}'")
+        return None

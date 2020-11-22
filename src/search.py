@@ -36,12 +36,15 @@ class MultiSearchResult:
         if self.mediaType == "movie":
             return Ombi.fetch_movie()
 
-    @staticmethod
-    def results_from_response(response):
+    def callback_data(self):
+        return {"action": "request", "type": "movie", "id": self.tmdb_id}
+
+    @classmethod
+    def results_from_response(cls, response):
         if response is None:
             return None
-        results = [MultiSearchResult(item) for item in response]
-        Logger.info(f"Deserialized {len(results)} multi results")
+        results = [cls(item) for item in response]
+        Logger.info(f"Deserialized {len(results)} results")
         return results
 
 
@@ -68,13 +71,12 @@ class SearchResult:
 
 class MovieSearchResult(SearchResult):
     def __init__(self, obj: dict):
-        Logger.info(f"Contructing MovieSearchResult from object: {obj}")
         super().__init__(obj)
         self.poster_url = None
         if obj.get("posterPath"):
             self.poster_url = Ombi.Images.Poster.format(obj.get("posterPath"))
         self.weight = obj.get("popularity")
-        self.tmdb_id = obj.get("theMovieDbId")
+        self.tmdb_id = obj.get("id")
         self.date = obj.get("releaseDate")
         self.year = int(self.date.split("-")[0]) if self.date else None
 

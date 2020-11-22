@@ -1,3 +1,6 @@
+import json
+import threading
+
 import telegram
 from telegram.ext import (
     Updater,
@@ -21,22 +24,6 @@ def launch(env: Environment):
     bot.startup()
 
 
-class CommandFactory:
-    @staticmethod
-    def start():
-        return Command(
-            name="start", description="Starts the bot", callback=Callbacks.start
-        )
-
-    @staticmethod
-    def search():
-        return Command(
-            name="search",
-            description="Performs a search for movies and TV shows.",
-            callback=Callbacks.search,
-        )
-
-
 class Command:
     def __init__(self, name, description, callback):
         self.name = name
@@ -47,22 +34,23 @@ class Command:
 class Bot:
     def __init__(self, environment):
         self.updater = Updater(token=environment.telegram_bot_token())
+        self.max_search_results = environment.max_search_results(default_max=100)
+        self.search_result_delete_delay = environment.search_result_delete_delay()
         Ombi.initialize(
             host=environment.ombi_host(),
             api_key=environment.ombi_api_key(),
             ombi_user_name=environment.ombi_user_name(),
         )
 
-        self.updater.dispatcher.add_handler(
-            CallbackQueryHandler(Callbacks.handle_callback_query, pass_user_data=True)
-        )
-
     def startup(self):
         if self.updater is None:
             return None
 
-        self._register_default_commands()
+        self.updater.dispatcher.add_handler(
+            CallbackQueryHandler(self.handle_callback_query, pass_user_data=True)
+        )
 
+        self._register_default_commands()
         self.updater.start_polling()
         Logger.info("Plexy started correctly and is ready for battle!")
 
@@ -72,15 +60,77 @@ class Bot:
 
     def _register_default_commands(self):
         commands = [
-            CommandFactory.start(),
-            CommandFactory.search(),
+            Command(name="start", description="Starts the bot", callback=self.start),
+            Command(
+                name="search",
+                description="Performs a search for movies and TV shows.",
+                callback=self.search,
+            ),
         ]
 
         for command in commands:
             self.register_command(command)
 
         self.updater.dispatcher.add_handler(
-            MessageHandler(Filters.command, Callbacks.unknown)
+            MessageHandler(Filters.command, self.unknown)
+        )
+
+    def start(self, update: telegram.Update, context: telegram.ext.CallbackContext):
+        Messenger.send_message(
+            bot=context.bot,
+            chat_id=update.effective_chat.id,
+            msg=Strings.Setup.START_WELCOME,
+        )
+
+    def search(self, update: telegram.Update, context: telegram.ext.CallbackContext):
+
+        query = MultiQuery(update, context)
+        Logger.info(f"Received search command with: '{query.text}'")
+
+        if query.text == "":
+            for i, msg in enumerate(
+                [
+                    Strings.Error.Command.COMMAND_USAGE_HELP_INTRO,
+                    Strings.Error.Command.SEARCH_COMMAND_USAGE_HELP,
+                    Strings.Error.Command.COMMAND_USAGE_EXAMPLE_INTRO,
+                    Strings.Error.Command.SEARCH_COMMAND_USAGE_EXAMPLE,
+                ]
+            ):
+                threading.Timer(
+                    i / 2,
+                    Messenger.send_message,
+                    [context.bot, update.effective_chat.id, msg],
+                ).start()
+            return
+        results = Search.execute(query)
+        for result in results:
+            if result.mediaType == "movie":
+                movie_result = MovieSearchResult(Ombi.fetch_movie(result.id))
+                msg = Messenger.send_search_result(
+                    bot=context.bot,
+                    chat_id=update.effective_chat.id,
+                    result=movie_result,
+                )
+                threading.Timer(self.search_result_delete_delay, msg.delete).start()
+
+    def handle_callback_query(
+        self, update: telegram.Update, context: telegram.ext.CallbackContext
+    ):
+        Logger.info(update.to_json())
+        callback_data = CallbackData.from_str(update.callback_query.data)
+        if Ombi.process_callback_data(callback_data):
+            Logger.info(f"Callback was processed correctly: {callback_data.__dict__}")
+            context.bot.delete_message(
+                chat_id=int(update.callback_query.message.chat.id),
+                message_id=int(update.callback_query.message.message_id),
+            )
+        else:
+            Logger.error("Callback could not be processed correctly")
+
+    def unknown(self, update: telegram.Update, context: telegram.ext.CallbackContext):
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=Strings.Errors.UNKNOWN_COMMAND,
         )
 
 
@@ -96,48 +146,3 @@ class CallbackData:
     @staticmethod
     def from_str(data: str):
         return CallbackData(json.loads(data))
-
-
-class Callbacks:
-    @staticmethod
-    def start(update: telegram.Update, context: telegram.ext.CallbackContext):
-        Messenger.send_message(
-            bot=context.bot,
-            chat_id=update.effective_chat.id,
-            msg=Strings.Setup.START_WELCOME,
-        )
-
-    @staticmethod
-    def search(update: telegram.Update, context: telegram.ext.CallbackContext):
-
-        query = MultiQuery(update, context)
-        Logger.info(f"Received search command with: '{query.text}'")
-        results = Search.execute(query)
-        for result in results:
-            if result.mediaType == "movie":
-                movie_result = MovieSearchResult(Ombi.fetch_movie(result.id))
-                Messenger.send_search_result(
-                    bot=context.bot,
-                    chat_id=update.effective_chat.id,
-                    result=movie_result,
-                )
-
-    @staticmethod
-    def handle_callback_query(
-        update: telegram.Update, context: telegram.ext.CallbackContext
-    ):
-        Logger.info(update.to_json())
-        callback_data = CallbackData.from_str(update.callback_query.data)
-        Ombi.process_callback_data(callback_data)
-        Logger.info(callback_data.__dict__)
-        context.bot.delete_message(
-            chat_id=int(update.callback_query.message.chat.id),
-            message_id=int(update.callback_query.message.message_id),
-        )
-
-    @staticmethod
-    def unknown(update: telegram.Update, context: telegram.ext.CallbackContext):
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=Strings.Errors.UNKNOWN_COMMAND,
-        )
