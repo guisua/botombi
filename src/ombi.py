@@ -14,7 +14,7 @@ class Ombi:
 
         class Request:
             Movie = "/v1/Request/movie"
-            Tv = "/v1/Request/TV"
+            Tv = "/v2/Requests/tv"
 
     _ombi = None
 
@@ -65,13 +65,13 @@ class Ombi:
             data={"theMovieDbId": tmdb_id},
         )
 
-    def _request_tv(self, thetvdb_id):
-        Logger.info(f"Send TV Show request to Ombi for thetvdb_id '{thetvdb_id}'")
+    def _request_tv(self, themoviedb_id):
+        Logger.info(f"Send TV Show request to Ombi for themoviedb_id '{themoviedb_id}'")
         url = self._base_url() + Ombi.Endpoint.Request.Tv
         return Communicator.post(
             url=url,
             headers=self.headers,
-            data={"requestAll": True, "tvDbId": thetvdb_id},
+            data={"requestAll": True, "theMovieDbId": themoviedb_id},
         )
 
     @staticmethod
@@ -112,12 +112,12 @@ class Ombi:
         return None
 
     @staticmethod
-    def request_tv(thetvdb_id: int):
-        if thetvdb_id is None:
-            Logger.error(f"Tried to request TV show with id: {thetvdb_id}")
+    def request_tv(themoviedb_id: int):
+        if themoviedb_id is None:
+            Logger.error(f"Tried to request TV show with id: {themoviedb_id}")
             return False
-        Logger.info(f"Requesting TV show with id: {thetvdb_id}")
-        response = Ombi._ombi._request_tv(thetvdb_id=thetvdb_id)
+        Logger.info(f"Requesting TV show with id: {themoviedb_id}")
+        response = Ombi._ombi._request_tv(themoviedb_id=themoviedb_id)
         if response is not None:
             if response.get("isError") == False:
                 return response.get("result")
@@ -130,7 +130,7 @@ class Ombi:
             if callback_data.type == "movie":
                 return Ombi.request_movie(tmdb_id=callback_data.id)
             if callback_data.type == "tv":
-                return Ombi.request_tv(thetvdb_id=callback_data.id)
+                return Ombi.request_tv(themoviedb_id=callback_data.id)
             Logger.info(f"Unsupported callback type '{callback_data.type}'")
             return None
         Logger.info(f"Unsupported callback action '{callback_data.action}'")
